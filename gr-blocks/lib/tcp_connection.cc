@@ -94,13 +94,17 @@ namespace gr {
           pmt::pmt_t vector = pmt::init_u8vector(bytes_transferred, (const uint8_t*)&d_buf[0]);
           pmt::pmt_t pdu = pmt::cons(pmt::PMT_NIL, vector);
 
-          d_block->message_port_pub(PDU_PORT_ID, pdu);
+          d_block->message_port_pub(pdu::pdu_port_id(), pdu);
         }
 
         d_socket.async_read_some(boost::asio::buffer(d_buf),
           boost::bind(&tcp_connection::handle_read, this,
             boost::asio::placeholders::error,
             boost::asio::placeholders::bytes_transferred));
+      }
+      else {
+        d_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
+        d_socket.close();
       }
     }
   } /* namespace blocks */

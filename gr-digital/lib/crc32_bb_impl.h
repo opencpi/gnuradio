@@ -36,7 +36,8 @@ namespace gr {
       bool d_packed;
       boost::crc_optimal<32, 0x04C11DB7, 0xFFFFFFFF, 0xFFFFFFFF, true, true>    d_crc_impl;
       int d_crc_length;
-      char *d_unpacked_crc;
+      std::vector<char> d_buffer;
+      unsigned int calculate_crc32(const unsigned char* in, size_t packet_length);
 
      public:
       crc32_bb_impl(bool check, const std::string& lengthtagname, bool packed);
@@ -48,8 +49,6 @@ namespace gr {
 		       gr_vector_const_void_star &input_items,
 		       gr_vector_void_star &output_items);
 
-      uint64_t d_npass;
-      uint64_t d_nfail;
     };
 
   } // namespace digital

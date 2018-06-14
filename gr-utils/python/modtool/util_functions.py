@@ -1,5 +1,5 @@
 #
-# Copyright 2013 Free Software Foundation, Inc.
+# Copyright 2013, 2018 Free Software Foundation, Inc.
 #
 # This file is part of GNU Radio
 #
@@ -22,6 +22,7 @@
 
 import re
 import sys
+import readline
 
 # None of these must depend on other modtool stuff!
 
@@ -144,3 +145,32 @@ def ask_yes_no(question, default):
         return default
     else:
         return not default
+
+class SequenceCompleter(object):
+    """ A simple completer function wrapper to be used with readline, e.g.
+    option_iterable = ("search", "seek", "destroy")
+    readline.set_completer(SequenceCompleter(option_iterable).completefunc)
+
+    Typical usage is with the `with` statement. Restores the previous completer
+    at exit, thus nestable.
+    """
+
+    def __init__(self, sequence=None):
+        self._seq = sequence or []
+        self._tmp_matches = []
+
+    def completefunc(self, text, state):
+        if not text and state < len(self._seq):
+            return self._seq[state]
+        if not state:
+            self._tmp_matches = filter(lambda candidate: candidate.startswith(text), self._seq)
+        if state < len(self._tmp_matches):
+            return self._tmp_matches[state]
+
+    def __enter__(self):
+        self._old_completer = readline.get_completer()
+        readline.set_completer(self.completefunc)
+        readline.parse_and_bind("tab: complete")
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        readline.set_completer(self._old_completer)

@@ -108,7 +108,7 @@ CPACK_COMPONENT("qtgui_swig"
 ########################################################################
 add_subdirectory(include/gnuradio/qtgui)
 add_subdirectory(lib)
-add_subdirectory(doc)
+add_subdirectory(docs)
 add_subdirectory(examples/c++)
 if(ENABLE_PYTHON)
     add_subdirectory(grc)
@@ -121,6 +121,8 @@ endif(ENABLE_PYTHON)
 ########################################################################
 # Create Pkg Config File
 ########################################################################
+set( PC_LIBS "${QWT_LIBRARIES} ${QT_LIBRARIES}" )
+string (REPLACE ";" " " PC_LIBS_STR "${PC_LIBS}")
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/gnuradio-qtgui.pc.in
     ${CMAKE_CURRENT_BINARY_DIR}/gnuradio-qtgui.pc

@@ -73,9 +73,12 @@ namespace gr {
   void
   random::reseed(unsigned int seed)
   {
-    if(seed==0) d_seed = static_cast<unsigned int>(std::time(0));
-    else d_seed = seed;
-    d_rng->seed(d_seed);
+    d_seed = seed;
+    if (d_seed == 0){
+      d_rng->seed();
+    } else {
+      d_rng->seed(d_seed);
+    }
     // reinstantiate generators. Otherwise reseed doesn't take effect.
     delete d_generator;
     d_generator = new boost::variate_generator<boost::mt19937&, boost::uniform_real<float> > (*d_rng,*d_uniform); // create number generator in [0,1) from boost.random
@@ -130,19 +133,20 @@ namespace gr {
               s = x*x+y*y;
           }while(s >= 1.0f || s == 0.0f);
           d_gauss_stored = true;
-          d_gauss_value = x*sqrt(-2.0*log(s)/s);
-          return y*sqrt(-2.0*log(s)/s);
+          d_gauss_value = x*sqrtf(-2.0*logf(s)/s);
+          return y*sqrtf(-2.0*logf(s)/s);
       }
   }
 
   float
   random::laplacian()
   {
-    float z = ran1()-0.5;
-    if(z>0) return -log(1-2*z);
-    else return log(1+2*z);
+          float z = ran1();
+          if (z > 0.5f){
+                  return -logf(2.0f * (1.0f - z) );
+          }
+          return logf(2 * z);
   }
-
   /*
    * Copied from The KC7WW / OH2BNS Channel Simulator
    * FIXME Need to check how good this is at some point
@@ -151,7 +155,7 @@ namespace gr {
   float
   random::impulse(float factor = 5)
   {
-    float z = -M_SQRT2 * log(ran1());
+    float z = -M_SQRT2 * logf(ran1());
     if(fabsf(z) <= factor)
       return 0.0;
     else
@@ -167,7 +171,7 @@ namespace gr {
   float
   random::rayleigh()
   {
-    return sqrt(-2.0 * log(ran1()));
+    return sqrtf(-2.0 * logf(ran1()));
   }
 
 } /* namespace gr */

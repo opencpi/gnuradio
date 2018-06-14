@@ -29,6 +29,7 @@ self.$(id).enable_autoscale($autoscale)
 self.$(id).enable_grid($grid)
 self.$(id).enable_axis_labels($axislabels)
 self.$(id).enable_control_panel($ctrlpanel)
+self.$(id).enable_stem_plot($stemplot)
 
 if not $legend:
   self.$(id).disable_legend()
@@ -74,7 +75,8 @@ for i in xrange(#if $type.t == 'message' then 1 else $nconnections#):
 #end if
 
 self._$(id)_win = sip.wrapinstance(self.$(id).pyqwidget(), Qt.QWidget)
-$(gui_hint()($win))</make>
+$(gui_hint() % $win)</make>
+
   <callback>set_time_domain_axis($min, $max)</callback>
   <callback>set_update_time($update_time)</callback>
   <callback>set_title($which, $title)</callback>
@@ -367,6 +369,23 @@ $(gui_hint()($win))</make>
     <name>Axis Labels</name>
     <key>axislabels</key>
     <value>True</value>
+    <type>enum</type>
+    <hide>part</hide>
+    <option>
+      <name>Yes</name>
+      <key>True</key>
+    </option>
+    <option>
+      <name>No</name>
+      <key>False</key>
+    </option>
+    <tab>Config</tab>
+  </param>
+
+  <param>
+    <name>Stem Plot</name>
+    <key>stemplot</key>
+    <value>False</value>
     <type>enum</type>
     <hide>part</hide>
     <option>

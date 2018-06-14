@@ -40,20 +40,18 @@ namespace gr {
                               io_signature::make(1, 1, sizeof(char)),
                               io_signature::make(1, 1, sizeof(char)),
                               lengthtagname),
-          d_check(check), d_packed(packed),
-          d_npass(0), d_nfail(0) {
+          d_check(check), d_packed(packed){
       d_crc_length = 4;
       if (!d_packed) {
         d_crc_length = 32;
-        d_unpacked_crc = new char[d_crc_length];
+        d_buffer = std::vector<char>(d_crc_length);
+      }else{
+        d_buffer = std::vector<char>(4096);
       }
       set_tag_propagation_policy(TPP_DONT);
     }
 
     crc32_bb_impl::~crc32_bb_impl() {
-      if (!d_packed){
-        delete[] d_unpacked_crc;
-      }
     }
 
     int
@@ -65,6 +63,28 @@ namespace gr {
       }
     }
 
+    unsigned int
+    crc32_bb_impl::calculate_crc32(const unsigned char* in, size_t packet_length){
+      unsigned int crc = 0;
+      d_crc_impl.reset();
+      if (!d_packed){
+        const size_t n_packed_length = 1 + ((packet_length - 1) / 8);
+        if (n_packed_length > d_buffer.size()){
+          d_buffer.resize(n_packed_length);
+          }
+        d_buffer.clear();
+        for (size_t bit = 0; bit < packet_length; bit++){
+          d_buffer[bit/8] |= (in[bit] << (bit % 8));
+        }
+        d_crc_impl.process_bytes(&d_buffer[0], n_packed_length);
+        crc = d_crc_impl();
+      } else{
+        d_crc_impl.process_bytes(in, packet_length);
+        crc = d_crc_impl();
+      }
+      return crc;
+    }
+
     int
     crc32_bb_impl::work(int noutput_items,
                         gr_vector_int &ninput_items,
@@ -72,43 +92,40 @@ namespace gr {
                         gr_vector_void_star &output_items) {
       const unsigned char *in = (const unsigned char *) input_items[0];
       unsigned char *out = (unsigned char *) output_items[0];
-      long packet_length = ninput_items[0];
+      size_t packet_length = ninput_items[0];
       int packet_size_diff = d_check ? -d_crc_length : d_crc_length;
       unsigned int crc;
 
       if (d_check) {
-        d_crc_impl.reset();
+        if (packet_length <= d_crc_length){
+          return 0;
+        }
         d_crc_impl.process_bytes(in, packet_length - d_crc_length);
-        crc = d_crc_impl();
+        crc = calculate_crc32(in, packet_length - d_crc_length);
         if (d_packed) {
           if (crc != *(unsigned int *) (in + packet_length - d_crc_length)) { // Drop package
-            d_nfail++;
             return 0;
           }
         }
         else{
           for(int i=0; i < d_crc_length; i++){
             if(((crc >> i) & 0x1) != *(in + packet_length - d_crc_length + i)) { // Drop package
-              d_nfail++;
               return 0;
             }
           }
         }
-        d_npass++;
         memcpy((void *) out, (const void *) in, packet_length - d_crc_length);
       } else {
-        d_crc_impl.reset();
-        d_crc_impl.process_bytes(in, packet_length);
-        crc = d_crc_impl();
+        crc = calculate_crc32(in, packet_length);
         memcpy((void *) out, (const void *) in, packet_length);
         if (d_packed) {
           memcpy((void *) (out + packet_length), &crc, d_crc_length); // FIXME big-endian/little-endian, this might be wrong
         }
         else {
           for (int i = 0; i < d_crc_length; i++) { // unpack CRC and store in buffer
-            d_unpacked_crc[i] = (crc >> i) & 0x1;
+            d_buffer[i] = (crc >> i) & 0x1;
           }
-          memcpy((void *) (out + packet_length), (void *) d_unpacked_crc, d_crc_length);
+          memcpy((void *) (out + packet_length), (void *) &d_buffer[0], d_crc_length);
         }
       }
 
